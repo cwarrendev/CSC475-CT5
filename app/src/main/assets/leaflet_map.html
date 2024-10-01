@@ -22,7 +22,7 @@
         // Function to update location when called from Kotlin WebView
         function updateLocation(lat, lon) {
             if (mapReady) {
-                map.setView([lat, lon], 13);
+                map.setView([lat, lon], 18);
                 L.marker([lat, lon]).addTo(map)
                     .bindPopup('Updated Location')
                     .openPopup();
@@ -35,7 +35,7 @@
 
         // Initialize the Leaflet map after the DOM is fully loaded
         document.addEventListener("DOMContentLoaded", function() {
-            map = L.map('map').setView([51.505, -0.09], 13); // Default view
+            map = L.map('map').setView([51.505, -0.09], 18); // Default view
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
