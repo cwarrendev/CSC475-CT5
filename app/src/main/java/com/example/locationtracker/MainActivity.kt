@@ -9,21 +9,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
-import com.example.locationtracker.ui.theme.LocationTrackerTheme
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
+import com.google.android.gms.location.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,63 +28,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Initialize WebView
+        WebView.setWebContentsDebuggingEnabled(true)
         webView = findViewById(R.id.map)
         webView.settings.javaScriptEnabled = true
-        webView.webViewClient = WebViewClient()
+        webView.settings.domStorageEnabled = true
 
-        val htmlContent = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Leaflet Map</title>
-                <meta charset="utf-8" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-                <style>
-                    #map {
-                        height: 100%;
-                    }
-                </style>
-            </head>
-            <body>
-                <div id="map" style="height: 100vh;"></div>
-                <script>
-                    var map;
+        // Load the HTML file from assets
+        webView.loadUrl("file:///android_asset/leaflet_map.html")
 
-                    function updateLocation(lat, lon) {
-                        map.setView([lat, lon], 13);
-                        L.marker([lat, lon]).addTo(map)
-                            .bindPopup('Updated Location')
-                            .openPopup();
-                    }
-
-                    document.addEventListener("DOMContentLoaded", function() {
-                        map = L.map('map').setView([51.505, -0.09], 13);
-
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        }).addTo(map);
-
-                        L.marker([51.5, -0.09]).addTo(map)
-                            .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-                            .openPopup();
-                    });
-                </script>
-            </body>
-            </html>
-        """.trimIndent()
-
-        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+        // Wait until the WebView is fully loaded before interacting with it
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                // Start location updates only after the WebView is ready
+                startLocationUpdates()
+            }
+        }
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
+        // Set up location callback
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { location ->
@@ -106,6 +61,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Check for location permissions
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -113,15 +69,8 @@ class MainActivity : AppCompatActivity() {
         ) {
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
+            // Start location updates when permission is granted
             startLocationUpdates()
-        }
-
-        findViewById<ComposeView>(R.id.compose_view).setContent {
-            LocationTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) {
-                    MapView()
-                }
-            }
         }
     }
 
@@ -140,67 +89,12 @@ class MainActivity : AppCompatActivity() {
         ) {
             return
         }
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            mainLooper
-        )
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, mainLooper)
     }
 
     private fun updateLocationOnMap(location: Location) {
+        // Call the JavaScript function from the WebView
         val js = "javascript:updateLocation(${location.latitude}, ${location.longitude})"
         webView.evaluateJavascript(js, null)
     }
-}
-
-@Composable
-fun MapView() {
-    AndroidView(factory = { context ->
-        WebView(context).apply {
-            settings.javaScriptEnabled = true
-            webViewClient = WebViewClient()
-            loadDataWithBaseURL(null, """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Leaflet Map</title>
-                    <meta charset="utf-8" />
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-                    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-                    <style>
-                        #map {
-                            height: 100%;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div id="map" style="height: 100vh;"></div>
-                    <script>
-                        var map;
-
-                        function updateLocation(lat, lon) {
-                            map.setView([lat, lon], 13);
-                            L.marker([lat, lon]).addTo(map)
-                                .bindPopup('Updated Location')
-                                .openPopup();
-                        }
-
-                        document.addEventListener("DOMContentLoaded", function() {
-                            map = L.map('map').setView([51.505, -0.09], 13);
-
-                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            }).addTo(map);
-
-                            L.marker([51.5, -0.09]).addTo(map)
-                                .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
-                                .openPopup();
-                        });
-                    </script>
-                </body>
-                </html>
-            """.trimIndent(), "text/html", "UTF-8", null)
-        }
-    })
 }

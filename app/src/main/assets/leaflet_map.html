@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 100vh; /* Ensure the map has height to display */
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        var map;
+        var mapReady = false; // Flag to check if the map is initialized
+        var pendingLocation = null; // Store pending location updates
+
+        // Function to update location when called from Kotlin WebView
+        function updateLocation(lat, lon) {
+            if (mapReady) {
+                map.setView([lat, lon], 13);
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup('Updated Location')
+                    .openPopup();
+            } else {
+                // Store the location if the map is not ready yet
+                pendingLocation = { lat: lat, lon: lon };
+                console.error('Map is not initialized yet');
+            }
+        }
+
+        // Initialize the Leaflet map after the DOM is fully loaded
+        document.addEventListener("DOMContentLoaded", function() {
+            map = L.map('map').setView([51.505, -0.09], 13); // Default view
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Set the mapReady flag to true once the map is fully initialized
+            mapReady = true;
+
+            // If there was a pending location update, apply it now
+            if (pendingLocation) {
+                updateLocation(pendingLocation.lat, pendingLocation.lon);
+                pendingLocation = null; // Clear the pending location
+            }
+        });
+    </script>
+</body>
+</html>
