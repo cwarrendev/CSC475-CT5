@@ -1,6 +1,8 @@
+// app/src/main/java/com/example/locationtracker/MainActivity.kt
 package com.example.locationtracker
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
@@ -9,13 +11,12 @@ import android.webkit.WebViewClient
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import com.example.locationtracker.ui.theme.LocationTrackerTheme
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -41,6 +42,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,11 +75,8 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<ComposeView>(R.id.compose_view).setContent {
             LocationTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Scaffold(modifier = Modifier.fillMaxSize()) {
+                    MapView()
                 }
             }
         }
@@ -112,6 +111,12 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(text = "Hello, $name!", modifier = modifier)
+fun MapView() {
+    AndroidView(factory = { context ->
+        WebView(context).apply {
+            settings.javaScriptEnabled = true
+            webViewClient = WebViewClient()
+            loadUrl("file:///android_asset/leaflet_map.html")
+        }
+    })
 }
