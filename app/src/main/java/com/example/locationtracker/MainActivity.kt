@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/locationtracker/MainActivity.kt
 package com.example.locationtracker
 
 import android.Manifest
@@ -51,7 +50,51 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.map)
         webView.settings.javaScriptEnabled = true
         webView.webViewClient = WebViewClient()
-        webView.loadUrl("file:///android_asset/leaflet_map.html")
+
+        val htmlContent = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Leaflet Map</title>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+                <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+                <style>
+                    #map {
+                        height: 100%;
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="map" style="height: 100vh;"></div>
+                <script>
+                    var map;
+
+                    function updateLocation(lat, lon) {
+                        map.setView([lat, lon], 13);
+                        L.marker([lat, lon]).addTo(map)
+                            .bindPopup('Updated Location')
+                            .openPopup();
+                    }
+
+                    document.addEventListener("DOMContentLoaded", function() {
+                        map = L.map('map').setView([51.505, -0.09], 13);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        }).addTo(map);
+
+                        L.marker([51.5, -0.09]).addTo(map)
+                            .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
+                            .openPopup();
+                    });
+                </script>
+            </body>
+            </html>
+        """.trimIndent()
+
+        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
@@ -116,7 +159,48 @@ fun MapView() {
         WebView(context).apply {
             settings.javaScriptEnabled = true
             webViewClient = WebViewClient()
-            loadUrl("file:///android_asset/leaflet_map.html")
+            loadDataWithBaseURL(null, """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Leaflet Map</title>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+                    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+                    <style>
+                        #map {
+                            height: 100%;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="map" style="height: 100vh;"></div>
+                    <script>
+                        var map;
+
+                        function updateLocation(lat, lon) {
+                            map.setView([lat, lon], 13);
+                            L.marker([lat, lon]).addTo(map)
+                                .bindPopup('Updated Location')
+                                .openPopup();
+                        }
+
+                        document.addEventListener("DOMContentLoaded", function() {
+                            map = L.map('map').setView([51.505, -0.09], 13);
+
+                            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            }).addTo(map);
+
+                            L.marker([51.5, -0.09]).addTo(map)
+                                .bindPopup('A pretty CSS3 popup.<br> Easily customizable.')
+                                .openPopup();
+                        });
+                    </script>
+                </body>
+                </html>
+            """.trimIndent(), "text/html", "UTF-8", null)
         }
     })
 }
